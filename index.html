@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#121510">
-  <meta name="description" content="Two players. One keyboard. One very urgent bathroom break. Race your friend in this free, single-file arcade game.">
+  <meta name="description" content="Two players. One screen. Race your friend with touch controls or a keyboard in this free, single-file arcade game.">
   <title>Haribo Race — The bathroom is calling.</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23c4f564'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='44' font-family='monospace' font-weight='bold' fill='%23121510'%3EH%3C/text%3E%3C/svg%3E">
   <style>
@@ -39,7 +39,7 @@
     #timer { display: block; font-size: 29px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
     .timer-label { color: var(--muted); font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
     .urgent #timer { color: var(--coral); }
-    .viewport { position: relative; isolation: isolate; }
+    .viewport { position: relative; isolation: isolate; min-width: 0; }
     canvas { display: block; width: 100%; height: auto; aspect-ratio: 7 / 4; outline-offset: -4px; }
     canvas:focus-visible { outline: 2px solid var(--lime); }
     .overlay { position: absolute; inset: 0; background: #10150ec4; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); }
@@ -68,13 +68,53 @@
     .legend span:nth-child(2)::before { background: var(--coral); }
     .legend span:nth-child(3)::before { background: #4e5c3f; }
     .small-screen { display: none; }
+    .touch-controls, .touch-tip { display: none; }
+    .touch-player { --control-color: var(--lime); text-align: center; }
+    .touch-player:last-child { --control-color: var(--coral); }
+    .touch-label { color: var(--control-color); font-weight: 800; font-size: 11px; margin-bottom: 6px; }
+    .dpad { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .direction { border: 1px solid var(--control-color); border-radius: 10px; background: #252d20; color: var(--control-color); font-size: 23px; line-height: 1; padding: 0; touch-action: none; }
+    .direction.pressed { color: var(--bg); background: var(--control-color); transform: scale(.94); }
+    .direction[data-direction="up"] { grid-area: 1 / 2; }
+    .direction[data-direction="left"] { grid-area: 2 / 1; }
+    .direction[data-direction="right"] { grid-area: 2 / 3; }
+    .direction[data-direction="down"] { grid-area: 3 / 2; }
     @media (max-width: 700px) {
       .page { padding: 16px; } .hero { padding: 24px 0; } .intro { display: none; }
       .status { font-size: 8px; letter-spacing: .4px; } .game-bar { padding: 12px; gap: 6px; }
       .score, .bear-badge { display: none; } .name { font-size: 11px; } .role { font-size: 8px; }
-      .viewport { min-height: 430px; display: grid; align-items: center; background: #171d13; }
+      .viewport { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; background: #171d13; }
+      .viewport canvas, .viewport .overlay { grid-area: 1 / 1; }
+      .overlay { position: relative; padding: 14px; }
       .modal { padding: 20px; } h2 { font-size: 31px; } .footer { flex-wrap: wrap; }
       .legend { gap: 12px; } .small-screen { display: block; color: var(--coral); font-size: 10px; margin: 12px 0 0; }
+    }
+    @media (any-pointer: coarse), (max-width: 700px) {
+      .arena.playing .touch-controls { display: flex; justify-content: space-between; gap: 8px; padding: 10px 6px; border-top: 1px solid var(--line); }
+      .touch-tip { display: block; color: var(--muted); font-size: 10px; }
+      .hero { padding: 16px 0; } .hero h1 { font-size: 32px; } .intro { display: none; }
+      .arena-footer { flex-wrap: wrap; } .arena-footer > div { margin-left: auto; }
+    }
+    @media (max-width: 360px) { .page { padding: 8px; } .status { display: none; } }
+    @media (orientation: landscape) and (max-height: 600px) and (any-pointer: coarse) {
+      .page { max-width: none; padding: 6px max(6px, env(safe-area-inset-right)) 6px max(6px, env(safe-area-inset-left)); }
+      .masthead, .hero, .footer, .small-screen { display: none; }
+      .game-bar { min-height: 44px; padding: 5px 12px; } #timer { font-size: 24px; }
+      .arena-footer { padding: 6px 10px; } #round-status { display: none; }
+      .arena.playing { display: grid; grid-template-columns: 152px minmax(0, 1fr) 152px; }
+      .arena.playing .game-bar { grid-column: 1 / -1; grid-row: 1; }
+      .arena.playing .viewport { grid-column: 2; grid-row: 2; display: grid; align-items: center; }
+      .arena.playing canvas { max-height: calc(100svh - 104px); object-fit: contain; }
+      .arena.playing .touch-controls { display: contents; }
+      .touch-player { align-self: center; justify-self: center; padding: 6px 0; }
+      .touch-player:first-child { grid-column: 1; grid-row: 2; }
+      .touch-player:last-child { grid-column: 3; grid-row: 2; }
+      .arena.playing .arena-footer { grid-column: 1 / -1; grid-row: 3; }
+      .viewport { display: grid; grid-template-columns: minmax(0, 1fr); } .viewport canvas, .viewport .overlay { grid-area: 1 / 1; }
+      .overlay { position: relative; padding: 10px; } .modal { width: 560px; padding: 14px; }
+      .modal-kicker, .modal .hint { display: none; } h2 { font-size: 25px; }
+      .modal p { margin-bottom: 8px; } .instructions { margin: 10px 0; }
+      .instruction { padding: 8px; } .primary { padding: 10px; }
     }
     @media (prefers-reduced-motion: reduce) { button { transition: none !important; } }
   </style>
@@ -87,7 +127,7 @@
     </header>
     <section class="hero" aria-label="About the game">
       <div><p class="eyebrow">A very urgent arcade game</p><h1>The bathroom is calling.<br><span>Better run.</span></h1></div>
-      <p class="intro">One keyboard. Two gummy rivals.<br>30 seconds between sweet relief<br>and a very unfortunate ending.</p>
+      <p class="intro">Touch screen or keyboard. Two gummy rivals.<br>30 seconds between sweet relief<br>and a very unfortunate ending.</p>
     </section>
     <section class="arena" aria-label="Haribo Race game">
       <div class="game-bar">
@@ -96,31 +136,52 @@
         <div class="player-id chaser"><div><div class="name">Haribb <span class="score" id="score2">0 wins</span></div><div class="role">The chaser · Arrow keys</div></div><span class="bear-badge" aria-hidden="true">2</span></div>
       </div>
       <div class="viewport">
-        <canvas id="game" width="1120" height="640" tabindex="0" aria-label="Game arena. Haribo moves with WASD; Haribb moves with arrow keys. Reach the bathroom on the right, or catch the runner. Escape pauses.">Your browser needs Canvas support to play Haribo Race.</canvas>
+        <canvas id="game" width="1120" height="640" tabindex="0" aria-label="Game arena. Use the on-screen direction buttons, or WASD for Haribo and arrow keys for Haribb. Reach the bathroom on the right, or catch the runner. Escape pauses.">Your browser needs Canvas support to play Haribo Race.</canvas>
         <div class="overlay" id="overlay">
           <section class="modal" aria-labelledby="modal-title" aria-describedby="modal-description">
             <div class="modal-kicker" id="modal-kicker">The great bathroom escape</div>
             <h2 id="modal-title">Small bears.<br>Big emergency.</h2>
-            <p id="modal-description">Haribo needs the bathroom. Haribb has other plans.<br>Pick a side. Share a keyboard. Settle it.</p>
+            <p id="modal-description">Haribo needs the bathroom. Haribb has other plans.<br>Pick a side. Share a screen. Settle it.</p>
             <div class="instructions" id="instructions">
               <div class="instruction"><strong>01 / Haribo</strong><div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>Reach the bathroom on the right before time runs out.</div>
               <div class="instruction"><strong>02 / Haribb</strong><div class="keys"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div>Catch Haribo. Use the walls to cut off the escape.</div>
             </div>
+            <p class="touch-tip">No celular: Haribo usa as setas verdes; Haribb, as laranjas. Segurem os botões para mover os dois ao mesmo tempo.</p>
             <button class="primary" id="play-button" type="button">Let's race →</button>
             <p class="hint" id="modal-hint">30-second rounds · ESC to pause · No downloads</p>
           </section>
         </div>
       </div>
+      <div class="touch-controls" aria-label="Controles de toque para dois jogadores">
+        <div class="touch-player">
+          <div class="touch-label">Haribo · correr</div>
+          <div class="dpad" role="group" aria-label="Mover Haribo">
+            <button class="direction" type="button" data-code="KeyW" data-direction="up" aria-label="Haribo: cima">↑</button>
+            <button class="direction" type="button" data-code="KeyA" data-direction="left" aria-label="Haribo: esquerda">←</button>
+            <button class="direction" type="button" data-code="KeyD" data-direction="right" aria-label="Haribo: direita">→</button>
+            <button class="direction" type="button" data-code="KeyS" data-direction="down" aria-label="Haribo: baixo">↓</button>
+          </div>
+        </div>
+        <div class="touch-player">
+          <div class="touch-label">Haribb · capturar</div>
+          <div class="dpad" role="group" aria-label="Mover Haribb">
+            <button class="direction" type="button" data-code="ArrowUp" data-direction="up" aria-label="Haribb: cima">↑</button>
+            <button class="direction" type="button" data-code="ArrowLeft" data-direction="left" aria-label="Haribb: esquerda">←</button>
+            <button class="direction" type="button" data-code="ArrowRight" data-direction="right" aria-label="Haribb: direita">→</button>
+            <button class="direction" type="button" data-code="ArrowDown" data-direction="down" aria-label="Haribb: baixo">↓</button>
+          </div>
+        </div>
+      </div>
       <div class="arena-footer"><span id="round-status" role="status" aria-live="polite">Find a friend. The bathroom can wait… for now.</span><div><button class="quiet-button" id="pause-button" type="button" hidden>Pause</button> <button class="quiet-button" id="restart-button" type="button">Restart ↻</button></div></div>
     </section>
     <div class="footer"><div class="legend"><span>Runner</span><span>Chaser</span><span>Walls = no shortcuts</span></div><span>No power-ups. No excuses. Just one bathroom.</span></div>
-    <p class="small-screen">A physical keyboard and two players are needed. Best played on a larger screen.</p>
+    <p class="small-screen">Dois jogadores no mesmo celular. Vire a tela na horizontal para ver melhor o mapa.</p>
     <noscript>This game needs JavaScript. Enable it, then reload to play.</noscript>
   </main>
   <script>
     'use strict';
     (() => {
-      const canvas = document.getElementById('game');
+      const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('game'));
       const ctx = canvas.getContext('2d');
       const overlay = document.getElementById('overlay');
       const title = document.getElementById('modal-title');
@@ -132,6 +193,8 @@
       const timer = document.getElementById('timer');
       const timerBlock = document.getElementById('timer-block');
       const status = document.getElementById('round-status');
+      const arena = document.querySelector('.arena');
+      const touchButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.direction'));
       const W = 1120, H = 640, ROUND_MS = 30000;
       const bounds = { left: 32, top: 32, right: W - 32, bottom: H - 32 };
       const goal = { x: 1000, y: 244, w: 88, h: 152 };
@@ -146,10 +209,48 @@
       const runner = { x: 100, y: 316, r: 18, speed: 225, color: '#c4f564', label: 'HARIBO', facing: 1, moving: false };
       const chaser = { x: 100, y: 516, r: 18, speed: 238, color: '#ff866e', label: 'HARIBB', facing: 1, moving: false };
       const keys = new Set();
+      const touchPointers = new Map();
       const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
       const scores = [0, 0];
       let state = 'ready', remaining = ROUND_MS, endAt = 0, previousTime = 0;
       let celebration = [];
+
+      function setState(next) {
+        state = next;
+        arena.classList.toggle('playing', state === 'playing');
+      }
+
+      function clearInput() {
+        keys.clear();
+        touchPointers.clear();
+        for (const button of touchButtons) button.classList.remove('pressed');
+      }
+
+      function isHeld(code) {
+        return keys.has(code) || Array.from(touchPointers.values()).some(button => button.dataset.code === code);
+      }
+
+      function releaseTouch(event) {
+        const button = touchPointers.get(event.pointerId);
+        if (!button) return;
+        touchPointers.delete(event.pointerId);
+        button.classList.toggle('pressed', Array.from(touchPointers.values()).includes(button));
+      }
+
+      for (const button of touchButtons) {
+        button.addEventListener('pointerdown', event => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          if (state !== 'playing') return;
+          button.setPointerCapture(event.pointerId);
+          touchPointers.set(event.pointerId, button);
+          button.classList.add('pressed');
+        });
+        button.addEventListener('pointerup', releaseTouch);
+        button.addEventListener('pointercancel', releaseTouch);
+        button.addEventListener('lostpointercapture', releaseTouch);
+        button.addEventListener('contextmenu', event => event.preventDefault());
+      }
 
       function roundedRect(x, y, w, h, radius, fill, stroke) {
         ctx.beginPath(); ctx.roundRect(x, y, w, h, radius);
@@ -165,8 +266,8 @@
       function start() {
         Object.assign(runner, { x: 100, y: 316, facing: 1, moving: false });
         Object.assign(chaser, { x: 100, y: 516, facing: 1, moving: false });
-        keys.clear(); celebration = []; remaining = ROUND_MS;
-        state = 'playing'; previousTime = performance.now(); endAt = previousTime + remaining;
+        clearInput(); celebration = []; remaining = ROUND_MS;
+        setState('playing'); previousTime = performance.now(); endAt = previousTime + remaining;
         overlay.hidden = true; pauseButton.hidden = false; pauseButton.textContent = 'Pause';
         status.textContent = 'Race on! Haribo: reach the right-hand bathroom. Haribb: catch Haribo.';
         updateTimer(); canvas.focus({ preventScroll: true });
@@ -174,7 +275,7 @@
 
       function finish(winner, timedOut = false) {
         if (state !== 'playing') return;
-        state = 'finished'; keys.clear(); runner.moving = chaser.moving = false;
+        setState('finished'); clearInput(); runner.moving = chaser.moving = false;
         scores[winner]++;
         for (let i = 0; i < 2; i++) document.getElementById('score' + (i + 1)).textContent = scores[i] + (scores[i] === 1 ? ' win' : ' wins');
         const message = winner === 0 ? 'Haribo made it to the bathroom!' : 'Haribb stopped Haribo!';
@@ -191,7 +292,7 @@
         if (state !== 'playing') return;
         remaining = Math.max(0, endAt - performance.now());
         if (remaining === 0) { updateTimer(); finish(1, true); return; }
-        state = 'paused'; keys.clear(); runner.moving = chaser.moving = false;
+        setState('paused'); clearInput(); runner.moving = chaser.moving = false;
         kicker.textContent = 'Take a breather'; title.textContent = 'Emergency on hold.';
         description.textContent = 'The clock is paused. Get both players ready, then jump back in.';
         instructions.hidden = true; playButton.textContent = 'Resume race →'; overlay.hidden = false;
@@ -201,7 +302,7 @@
 
       function resume() {
         if (state !== 'paused') return;
-        keys.clear(); state = 'playing'; previousTime = performance.now(); endAt = previousTime + remaining;
+        clearInput(); setState('playing'); previousTime = performance.now(); endAt = previousTime + remaining;
         overlay.hidden = true; pauseButton.textContent = 'Pause';
         status.textContent = 'Race on! Haribo: reach the right-hand bathroom. Haribb: catch Haribo.';
         canvas.focus({ preventScroll: true });
@@ -228,8 +329,8 @@
       }
 
       function step(dt) {
-        move(runner, Number(keys.has('KeyD')) - Number(keys.has('KeyA')), Number(keys.has('KeyS')) - Number(keys.has('KeyW')), dt);
-        move(chaser, Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft')), Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp')), dt);
+        move(runner, Number(isHeld('KeyD')) - Number(isHeld('KeyA')), Number(isHeld('KeyS')) - Number(isHeld('KeyW')), dt);
+        move(chaser, Number(isHeld('ArrowRight')) - Number(isHeld('ArrowLeft')), Number(isHeld('ArrowDown')) - Number(isHeld('ArrowUp')), dt);
         if (Math.hypot(runner.x - chaser.x, runner.y - chaser.y) <= runner.r + chaser.r) finish(1);
         else if (circleRect(runner, goal)) finish(0);
       }
@@ -328,13 +429,13 @@
           if (state === 'playing') keys.add(event.code);
         }
         if (event.code === 'Escape' && !event.repeat) { event.preventDefault(); state === 'paused' ? resume() : pause(); }
-        if (event.code === 'Enter' && !event.repeat && event.target.tagName !== 'BUTTON' && state !== 'playing') {
+        if (event.code === 'Enter' && !event.repeat && !(event.target instanceof window.Element && event.target.tagName === 'BUTTON') && state !== 'playing') {
           event.preventDefault(); state === 'paused' ? resume() : start();
         }
       });
       window.addEventListener('keyup', event => { keys.delete(event.code); if (movementKeys.has(event.code)) event.preventDefault(); });
-      window.addEventListener('blur', () => { keys.clear(); pause(); });
-      document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); pause(); } });
+      window.addEventListener('blur', () => { clearInput(); pause(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInput(); pause(); } });
       updateTimer();
       requestAnimationFrame(frame);
     })();
