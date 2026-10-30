@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121510">
+  <meta name="description" content="Two players. One keyboard. One very urgent bathroom break. Race your friend in this free, single-file arcade game.">
+  <title>Haribo Race — The bathroom is calling.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23c4f564'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-size='44' font-family='monospace' font-weight='bold' fill='%23121510'%3EH%3C/text%3E%3C/svg%3E">
+  <style>
+    :root { color-scheme: dark; --bg: #121510; --panel: #1c2119; --line: #363e2e; --ink: #f1f3e9; --muted: #a2ad96; --lime: #c4f564; --coral: #ff866e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 80% 0%, #c4f50909, transparent 55%); z-index: -1; }
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible { outline: 3px solid var(--ink); outline-offset: 5px; }
+    .page { max-width: 1248px; padding: 24px 40px 20px; margin: auto; }
+    .masthead, .brand, .status, .game-bar, .player-id, .footer, .legend, .hero { display: flex; align-items: center; }
+    .masthead { justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 20px; gap: 16px; }
+    .brand { gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -1px; }
+    .logo { display: grid; place-items: center; width: 31px; height: 31px; background: var(--lime); color: var(--bg); border-radius: 8px; font-size: 23px; transform: rotate(-6deg); }
+    .brand span:last-child { color: var(--lime); }
+    .status { gap: 9px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1.4px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 10px #c4f55455; }
+    .hero { justify-content: space-between; padding: 27px 0 24px; gap: 24px; }
+    .eyebrow { margin: 0 0 8px; color: var(--lime); text-transform: uppercase; font-size: 10px; letter-spacing: 2px; }
+    h1 { font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-size: clamp(32px, 4.3vw, 55px); line-height: 1; letter-spacing: -2.5px; margin: 0; }
+    h1 span { color: var(--lime); }
+    .intro { color: var(--muted); max-width: 300px; font-size: 12px; margin: 0; }
+    .arena { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); box-shadow: 0 20px 50px #0003; }
+    .game-bar { min-height: 74px; padding: 13px 22px; gap: 20px; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .player-id { gap: 10px; }
+    .bear-badge { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #c4f54544; border-radius: 9px; color: var(--lime); font-weight: 900; background: #c4f5090b; }
+    .chaser .bear-badge { color: var(--coral); border-color: #ff866e44; background: #ff866e0b; }
+    .name { font-size: 13px; font-weight: 700; }
+    .role { color: var(--muted); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+    .score { color: var(--muted); font-size: 10px; margin-left: 8px; }
+    .timer-block { text-align: center; min-width: 96px; }
+    #timer { display: block; font-size: 29px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+    .timer-label { color: var(--muted); font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
+    .urgent #timer { color: var(--coral); }
+    .viewport { position: relative; isolation: isolate; }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 7 / 4; outline-offset: -4px; }
+    canvas:focus-visible { outline: 2px solid var(--lime); }
+    .overlay { position: absolute; inset: 0; background: #10150ec4; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); }
+    .overlay[hidden] { display: none; }
+    .modal { width: 450px; max-width: 100%; text-align: center; border: 1px solid #566445; border-radius: 16px; padding: 28px; background: #1c2318; box-shadow: 0 18px 80px #0007; }
+    .modal-kicker { color: var(--lime); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 10px; }
+    h2 { font: 900 36px/1.04 Arial, Helvetica, sans-serif; letter-spacing: -1.5px; margin: 0 0 12px; text-wrap: balance; }
+    .modal p { color: #b4beaa; font-size: 12px; margin: 0 0 20px; }
+    .instructions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; text-align: left; }
+    .instruction { padding: 12px; background: #10150e77; border: 1px solid var(--line); border-radius: 8px; font-size: 10px; color: var(--muted); }
+    .instruction strong { display: block; color: var(--lime); font-size: 12px; margin-bottom: 7px; }
+    .instruction:last-child strong { color: var(--coral); }
+    .keys { display: flex; gap: 3px; margin: 8px 0; }
+    kbd { font: inherit; font-size: 10px; border: 1px solid #657054; border-bottom-width: 3px; border-radius: 4px; background: #2e3628; padding: 2px 5px; color: var(--ink); }
+    .primary { width: 100%; border: 0; border-radius: 7px; background: var(--lime); padding: 14px 18px; font-weight: 800; color: #18200e; box-shadow: 0 3px 0 #83aa3d; transition: background .15s, transform .15s; }
+    .primary:hover { background: #d6ff8e; transform: translateY(-1px); }
+    .modal .hint { font-size: 9px; margin: 14px 0 0; color: #8c9a7c; }
+    .arena-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--line); }
+    #round-status { font-size: 10px; color: var(--muted); }
+    .quiet-button { padding: 5px 9px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 5px; font-size: 10px; }
+    .quiet-button:hover { border-color: var(--lime); color: var(--lime); }
+    .footer { padding: 17px 0; justify-content: space-between; gap: 15px; font-size: 9px; color: #86917b; }
+    .legend { gap: 20px; }
+    .legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; background: var(--lime); border-radius: 2px; margin-right: 7px; }
+    .legend span:nth-child(2)::before { background: var(--coral); }
+    .legend span:nth-child(3)::before { background: #4e5c3f; }
+    .small-screen { display: none; }
+    @media (max-width: 700px) {
+      .page { padding: 16px; } .hero { padding: 24px 0; } .intro { display: none; }
+      .status { font-size: 8px; letter-spacing: .4px; } .game-bar { padding: 12px; gap: 6px; }
+      .score, .bear-badge { display: none; } .name { font-size: 11px; } .role { font-size: 8px; }
+      .viewport { min-height: 430px; display: grid; align-items: center; background: #171d13; }
+      .modal { padding: 20px; } h2 { font-size: 31px; } .footer { flex-wrap: wrap; }
+      .legend { gap: 12px; } .small-screen { display: block; color: var(--coral); font-size: 10px; margin: 12px 0 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { button { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div class="brand"><span class="logo" aria-hidden="true">H</span> HARIBO<span>RACE</span></div>
+      <div class="status"><span class="dot" aria-hidden="true"></span> Local multiplayer · 2 players</div>
+    </header>
+    <section class="hero" aria-label="About the game">
+      <div><p class="eyebrow">A very urgent arcade game</p><h1>The bathroom is calling.<br><span>Better run.</span></h1></div>
+      <p class="intro">One keyboard. Two gummy rivals.<br>30 seconds between sweet relief<br>and a very unfortunate ending.</p>
+    </section>
+    <section class="arena" aria-label="Haribo Race game">
+      <div class="game-bar">
+        <div class="player-id"><span class="bear-badge" aria-hidden="true">1</span><div><div class="name">Haribo <span class="score" id="score1">0 wins</span></div><div class="role">The runner · WASD</div></div></div>
+        <div class="timer-block" id="timer-block"><span id="timer" role="timer" aria-label="Seconds remaining">30.0</span><span class="timer-label">Seconds left</span></div>
+        <div class="player-id chaser"><div><div class="name">Haribb <span class="score" id="score2">0 wins</span></div><div class="role">The chaser · Arrow keys</div></div><span class="bear-badge" aria-hidden="true">2</span></div>
+      </div>
+      <div class="viewport">
+        <canvas id="game" width="1120" height="640" tabindex="0" aria-label="Game arena. Haribo moves with WASD; Haribb moves with arrow keys. Reach the bathroom on the right, or catch the runner. Escape pauses.">Your browser needs Canvas support to play Haribo Race.</canvas>
+        <div class="overlay" id="overlay">
+          <section class="modal" aria-labelledby="modal-title" aria-describedby="modal-description">
+            <div class="modal-kicker" id="modal-kicker">The great bathroom escape</div>
+            <h2 id="modal-title">Small bears.<br>Big emergency.</h2>
+            <p id="modal-description">Haribo needs the bathroom. Haribb has other plans.<br>Pick a side. Share a keyboard. Settle it.</p>
+            <div class="instructions" id="instructions">
+              <div class="instruction"><strong>01 / Haribo</strong><div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div>Reach the bathroom on the right before time runs out.</div>
+              <div class="instruction"><strong>02 / Haribb</strong><div class="keys"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div>Catch Haribo. Use the walls to cut off the escape.</div>
+            </div>
+            <button class="primary" id="play-button" type="button">Let's race →</button>
+            <p class="hint" id="modal-hint">30-second rounds · ESC to pause · No downloads</p>
+          </section>
+        </div>
+      </div>
+      <div class="arena-footer"><span id="round-status" role="status" aria-live="polite">Find a friend. The bathroom can wait… for now.</span><div><button class="quiet-button" id="pause-button" type="button" hidden>Pause</button> <button class="quiet-button" id="restart-button" type="button">Restart ↻</button></div></div>
+    </section>
+    <div class="footer"><div class="legend"><span>Runner</span><span>Chaser</span><span>Walls = no shortcuts</span></div><span>No power-ups. No excuses. Just one bathroom.</span></div>
+    <p class="small-screen">A physical keyboard and two players are needed. Best played on a larger screen.</p>
+    <noscript>This game needs JavaScript. Enable it, then reload to play.</noscript>
+  </main>
+  <script>
+    'use strict';
+    (() => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const overlay = document.getElementById('overlay');
+      const title = document.getElementById('modal-title');
+      const description = document.getElementById('modal-description');
+      const kicker = document.getElementById('modal-kicker');
+      const instructions = document.getElementById('instructions');
+      const playButton = document.getElementById('play-button');
+      const pauseButton = document.getElementById('pause-button');
+      const timer = document.getElementById('timer');
+      const timerBlock = document.getElementById('timer-block');
+      const status = document.getElementById('round-status');
+      const W = 1120, H = 640, ROUND_MS = 30000;
+      const bounds = { left: 32, top: 32, right: W - 32, bottom: H - 32 };
+      const goal = { x: 1000, y: 244, w: 88, h: 152 };
+      const walls = [
+        { x: 224, y: 96, w: 64, h: 176 },
+        { x: 224, y: 376, w: 64, h: 168 },
+        { x: 456, y: 200, w: 72, h: 240 },
+        { x: 688, y: 96, w: 64, h: 176 },
+        { x: 688, y: 376, w: 64, h: 168 },
+        { x: 872, y: 260, w: 48, h: 120 }
+      ];
+      const runner = { x: 100, y: 316, r: 18, speed: 225, color: '#c4f564', label: 'HARIBO', facing: 1, moving: false };
+      const chaser = { x: 100, y: 516, r: 18, speed: 238, color: '#ff866e', label: 'HARIBB', facing: 1, moving: false };
+      const keys = new Set();
+      const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
+      const scores = [0, 0];
+      let state = 'ready', remaining = ROUND_MS, endAt = 0, previousTime = 0;
+      let celebration = [];
+
+      function roundedRect(x, y, w, h, radius, fill, stroke) {
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, radius);
+        if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+      }
+
+      function updateTimer() {
+        timer.textContent = (Math.ceil(Math.max(0, remaining) / 100) / 10).toFixed(1);
+        timerBlock.classList.toggle('urgent', remaining <= 10000);
+      }
+
+      function start() {
+        Object.assign(runner, { x: 100, y: 316, facing: 1, moving: false });
+        Object.assign(chaser, { x: 100, y: 516, facing: 1, moving: false });
+        keys.clear(); celebration = []; remaining = ROUND_MS;
+        state = 'playing'; previousTime = performance.now(); endAt = previousTime + remaining;
+        overlay.hidden = true; pauseButton.hidden = false; pauseButton.textContent = 'Pause';
+        status.textContent = 'Race on! Haribo: reach the right-hand bathroom. Haribb: catch Haribo.';
+        updateTimer(); canvas.focus({ preventScroll: true });
+      }
+
+      function finish(winner, timedOut = false) {
+        if (state !== 'playing') return;
+        state = 'finished'; keys.clear(); runner.moving = chaser.moving = false;
+        scores[winner]++;
+        for (let i = 0; i < 2; i++) document.getElementById('score' + (i + 1)).textContent = scores[i] + (scores[i] === 1 ? ' win' : ' wins');
+        const message = winner === 0 ? 'Haribo made it to the bathroom!' : 'Haribb stopped Haribo!';
+        kicker.textContent = winner === 0 ? 'Sweet, sweet relief' : timedOut ? 'Time is up' : 'Caught in the act';
+        title.textContent = message;
+        description.textContent = winner === 0 ? 'A close call. A clean getaway. Ready for a rematch?' : timedOut ? '30 seconds, zero bathroom breaks. Haribb wins this round.' : 'No bathroom break this time. Try a different route next round.';
+        instructions.hidden = true; playButton.textContent = 'Race again ↻';
+        overlay.hidden = false; pauseButton.hidden = true; status.textContent = message;
+        celebration = Array.from({ length: 55 }, (_, i) => ({ x: 70 + (i * 137) % 980, y: -20 - (i * 53) % 440, speed: 40 + (i * 17) % 80, color: i % 2 ? '#c4f564' : '#ff866e' }));
+        playButton.focus({ preventScroll: true });
+      }
+
+      function pause() {
+        if (state !== 'playing') return;
+        remaining = Math.max(0, endAt - performance.now());
+        if (remaining === 0) { updateTimer(); finish(1, true); return; }
+        state = 'paused'; keys.clear(); runner.moving = chaser.moving = false;
+        kicker.textContent = 'Take a breather'; title.textContent = 'Emergency on hold.';
+        description.textContent = 'The clock is paused. Get both players ready, then jump back in.';
+        instructions.hidden = true; playButton.textContent = 'Resume race →'; overlay.hidden = false;
+        pauseButton.textContent = 'Resume'; status.textContent = 'Paused — the clock will resume when you do.';
+        updateTimer(); playButton.focus({ preventScroll: true });
+      }
+
+      function resume() {
+        if (state !== 'paused') return;
+        keys.clear(); state = 'playing'; previousTime = performance.now(); endAt = previousTime + remaining;
+        overlay.hidden = true; pauseButton.textContent = 'Pause';
+        status.textContent = 'Race on! Haribo: reach the right-hand bathroom. Haribb: catch Haribo.';
+        canvas.focus({ preventScroll: true });
+      }
+
+      function circleRect(player, rect) {
+        const nearX = Math.max(rect.x, Math.min(player.x, rect.x + rect.w));
+        const nearY = Math.max(rect.y, Math.min(player.y, rect.y + rect.h));
+        return (player.x - nearX) ** 2 + (player.y - nearY) ** 2 < player.r ** 2;
+      }
+
+      function move(player, dx, dy, dt) {
+        player.moving = dx !== 0 || dy !== 0;
+        if (!player.moving) return;
+        if (dx) player.facing = Math.sign(dx);
+        const length = Math.hypot(dx, dy);
+        const stepX = dx / length * player.speed * dt, stepY = dy / length * player.speed * dt;
+        const oldX = player.x;
+        player.x = Math.max(bounds.left + player.r, Math.min(bounds.right - player.r, player.x + stepX));
+        if (walls.some(wall => circleRect(player, wall))) player.x = oldX;
+        const oldY = player.y;
+        player.y = Math.max(bounds.top + player.r, Math.min(bounds.bottom - player.r, player.y + stepY));
+        if (walls.some(wall => circleRect(player, wall))) player.y = oldY;
+      }
+
+      function step(dt) {
+        move(runner, Number(keys.has('KeyD')) - Number(keys.has('KeyA')), Number(keys.has('KeyS')) - Number(keys.has('KeyW')), dt);
+        move(chaser, Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft')), Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp')), dt);
+        if (Math.hypot(runner.x - chaser.x, runner.y - chaser.y) <= runner.r + chaser.r) finish(1);
+        else if (circleRect(runner, goal)) finish(0);
+      }
+
+      function drawToilet(x, y) {
+        roundedRect(x - 13, y - 25, 26, 18, 4, '#d9edc9');
+        ctx.fillStyle = '#eaf7e0'; ctx.beginPath(); ctx.ellipse(x, y + 2, 18, 21, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#78a659'; ctx.beginPath(); ctx.ellipse(x, y, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
+        roundedRect(x - 9, y + 18, 18, 8, 3, '#d9edc9');
+        roundedRect(x + 4, y - 20, 5, 3, 1, '#78a659');
+      }
+
+      function drawBear(player, now) {
+        const bob = player.moving ? Math.sin(now / 70) * 1.5 : 0;
+        const x = player.x, y = player.y;
+        ctx.fillStyle = '#0005'; ctx.beginPath(); ctx.ellipse(x, y + 17, 22, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.save(); ctx.translate(x, y + bob);
+        ctx.fillStyle = player.color;
+        for (const [ex, ey, r] of [[-12, -15, 8], [12, -15, 8], [-12, 14, 7], [12, 14, 7], [-18, 2, 6], [18, 2, 6]]) {
+          ctx.beginPath(); ctx.arc(ex, ey, r, 0, Math.PI * 2); ctx.fill();
+        }
+        roundedRect(-16, -15, 32, 36, 13, player.color);
+        ctx.fillStyle = '#ffffff38'; ctx.beginPath(); ctx.ellipse(-7, -5, 4, 8, .3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#233017';
+        for (const ex of [-6, 7]) { ctx.beginPath(); ctx.arc(ex + player.facing * 2, -5, 2.4, 0, Math.PI * 2); ctx.fill(); }
+        ctx.beginPath(); ctx.ellipse(player.facing * 2, 3, 3.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#233017'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(player.facing * 2, 5, 5, .1, Math.PI - .1); ctx.stroke();
+        ctx.restore();
+        ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace'; ctx.fillStyle = player.color;
+        ctx.fillText(player.label, x, y - 34);
+      }
+
+      function draw(now, dt) {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#171d13'; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#242d1e'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 32; x <= W - 32; x += 32) { ctx.moveTo(x, 32); ctx.lineTo(x, H - 32); }
+        for (let y = 32; y <= H - 32; y += 32) { ctx.moveTo(32, y); ctx.lineTo(W - 32, y); }
+        ctx.stroke();
+        roundedRect(24, 24, W - 48, H - 48, 14, null, '#48573a');
+        roundedRect(31, 31, W - 62, H - 62, 9, null, '#343f2c');
+        ctx.fillStyle = '#799363'; ctx.textAlign = 'left'; ctx.font = '10px monospace';
+        ctx.fillText('START /', 64, 76); ctx.fillText('NO RUNNING? NOT TODAY.', 64, H - 56);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#536646'; ctx.font = 'bold 11px monospace';
+        ctx.fillText('THE LONG WAY IS SOMETIMES THE FAST WAY.', W / 2, 70);
+        ctx.setLineDash([6, 9]); ctx.strokeStyle = '#c4f56422';
+        ctx.beginPath(); ctx.moveTo(145, 320); ctx.lineTo(382, 320); ctx.stroke(); ctx.setLineDash([]);
+        for (const wall of walls) {
+          roundedRect(wall.x, wall.y + 7, wall.w, wall.h, 7, '#0b100aaa');
+          roundedRect(wall.x, wall.y, wall.w, wall.h, 7, '#3b4930', '#62754d');
+          roundedRect(wall.x + 5, wall.y + 5, wall.w - 10, 5, 2, '#586c43');
+          for (let y = wall.y + 31; y < wall.y + wall.h - 8; y += 32) {
+            ctx.strokeStyle = '#4a5b3b'; ctx.beginPath(); ctx.moveTo(wall.x + 8, y); ctx.lineTo(wall.x + wall.w - 8, y); ctx.stroke();
+          }
+        }
+        roundedRect(goal.x - 5, goal.y - 5, goal.w + 10, goal.h + 10, 10, '#c4f5640c', '#c4f56455');
+        roundedRect(goal.x, goal.y, goal.w, goal.h, 7, '#344f27', '#a9d978');
+        ctx.fillStyle = '#b5e58e'; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+        ctx.fillText('BATHROOM', goal.x + goal.w / 2, goal.y + 25);
+        drawToilet(goal.x + goal.w / 2, goal.y + 77);
+        ctx.font = 'bold 10px monospace'; ctx.fillText('SAFE!', goal.x + goal.w / 2, goal.y + 133);
+        ctx.fillStyle = '#a9d978'; ctx.beginPath(); ctx.moveTo(goal.x - 25, 314); ctx.lineTo(goal.x - 15, 320); ctx.lineTo(goal.x - 25, 326); ctx.fill();
+        drawBear(runner, now); drawBear(chaser, now);
+        if (state === 'finished' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          for (const p of celebration) { p.y += p.speed * dt; if (p.y > H) p.y = -20; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 5, 9); }
+        }
+      }
+
+      function frame(now) {
+        const elapsed = Math.min(Math.max((now - previousTime) / 1000, 0), .05);
+        previousTime = now;
+        if (state === 'playing') {
+          remaining = Math.max(0, endAt - now);
+          if (remaining <= 0) finish(1, true);
+          else {
+            let left = elapsed;
+            while (left > 0 && state === 'playing') {
+              const dt = Math.min(left, 1 / 120);
+              step(dt); left -= dt;
+            }
+          }
+          updateTimer();
+        }
+        draw(now, elapsed);
+        requestAnimationFrame(frame);
+      }
+
+      playButton.addEventListener('click', () => state === 'paused' ? resume() : start());
+      document.getElementById('restart-button').addEventListener('click', start);
+      pauseButton.addEventListener('click', () => state === 'paused' ? resume() : pause());
+      window.addEventListener('keydown', event => {
+        if (movementKeys.has(event.code)) {
+          event.preventDefault();
+          if (state === 'playing') keys.add(event.code);
+        }
+        if (event.code === 'Escape' && !event.repeat) { event.preventDefault(); state === 'paused' ? resume() : pause(); }
+        if (event.code === 'Enter' && !event.repeat && event.target.tagName !== 'BUTTON' && state !== 'playing') {
+          event.preventDefault(); state === 'paused' ? resume() : start();
+        }
+      });
+      window.addEventListener('keyup', event => { keys.delete(event.code); if (movementKeys.has(event.code)) event.preventDefault(); });
+      window.addEventListener('blur', () => { keys.clear(); pause(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); pause(); } });
+      updateTimer();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
